@@ -78,15 +78,27 @@ function Navbar({ user, userRole, handleLogout, hasApprovedPass }) {
   );
 
   const adminLinks = (
-    <>
-      <li><Link to="/admin/requests" style={{ ...navLinkStyle, color: "#18193F", background: "#FFD700" }}>Requests</Link></li>
-      <li><Link to="/admin/users/students" style={navLinkStyle}>Students</Link></li>
-      <li><Link to="/admin/users/teachers" style={navLinkStyle}>Teachers</Link></li>
-      <li><Link to="/admin/logins" style={navLinkStyle}>Login Log</Link></li>
-      <li><Link to="/admin/complaints" style={navLinkStyle}>Complaints</Link></li>
-      <li><Link to="/admin/all-data" style={navLinkStyle}>See All Data</Link></li>
-    </>
-  );
+  <>
+    <li>
+      <Link to="/admin/requests" style={{ ...navLinkStyle, color: "#18193F", background: "#FFD700" }}>
+        Requests
+      </Link>
+    </li>
+    <li><Link to="/admin/users/students" style={navLinkStyle}>Students</Link></li>
+    <li><Link to="/admin/users/teachers" style={navLinkStyle}>Teachers</Link></li>
+    <li><Link to="/admin/logins" style={navLinkStyle}>Login Log</Link></li>
+    <li><Link to="/admin/complaints" style={navLinkStyle}>Complaints</Link></li>
+    <li><Link to="/admin/all-data" style={navLinkStyle}>See All Data</Link></li>
+    
+    {/* 🟩 New Admin Notifications link */}
+    <li>
+      <Link to="/admin/notifications" style={navLinkStyle}>
+        Notifications
+      </Link>
+    </li>
+  </>
+);
+
 
   const guestLinks = (
     <>
@@ -281,15 +293,16 @@ const mobileMenuStyle = {
 
 const popupStyle = {
   position: "absolute",
-  top: "36px",
+  top: "40px",
   right: 0,
   background: "#1f1f2e",
   color: "#fff",
   borderRadius: 10,
-  width: 320,
+  width: "320px",
+  maxWidth: "90vw",   // ✅ shrink to fit smaller screens
   padding: 12,
   zIndex: 2000,
-  maxHeight: 400,
+  maxHeight: "60vh",
   overflowY: "auto",
   boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
 };

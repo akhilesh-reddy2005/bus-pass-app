@@ -74,7 +74,7 @@ function SignUpForm() {
         <div style={{ marginBottom: "16px" }}>
           <input
             type="text"
-            placeholder="USN (University Seat Number)"
+            placeholder="USN / EMP-ID"
             value={usn}
             onChange={(e) => setUsn(e.target.value)}
             required
@@ -89,7 +89,7 @@ function SignUpForm() {
         <div style={{ marginBottom: "16px" }}>
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Enter Email ID"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -104,7 +104,7 @@ function SignUpForm() {
         <div style={{ marginBottom: "16px" }}>
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Enter Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

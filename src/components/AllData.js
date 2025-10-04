@@ -1,147 +1,122 @@
 // src/components/AllData.js
 import React, { useEffect, useState, useMemo } from "react";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // ✅ proper import
+import autoTable from "jspdf-autotable";
 import { Filter, FileText, FileSpreadsheet } from "lucide-react";
 
 const COLLECTIONS_TO_FETCH = [
-  "busPassRequests",
-  "route-1","route-2","route-3","route-4","route-5","route-6",
-  "route-7","route-8","route-9","route-10","route-11","route-12"
+  "route-1","route-2","route-3","route-4",
+  "route-5","route-6","route-7","route-8",
+  "route-9","route-10","route-11","route-12",
 ];
 
-// ✅ Format Firestore date
+// ✅ Format Firestore Timestamp
 const formatReqDate = (req) => {
-  if (req.requestDate) {
-    const date = req.requestDate.toDate
-      ? req.requestDate.toDate()
-      : new Date(req.requestDate.seconds * 1000);
-    return date.toLocaleDateString();
-  }
-  return "N/A";
+  if (!req.requestDate) return "N/A";
+  const date = req.requestDate.toDate
+    ? req.requestDate.toDate()
+    : new Date(req.requestDate.seconds * 1000);
+  return date.toLocaleString();
 };
 
 function AllData() {
-  const [allRequests, setAllRequests] = useState([]);
+  const [allData, setAllData] = useState({});
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState("all");
 
+  // ✅ Live fetching from Firestore
   useEffect(() => {
-    const fetchAllRequests = async () => {
-      setLoading(true);
-      try {
-        let requests = [];
-        for (const colId of COLLECTIONS_TO_FETCH) {
-          const snapshot = await getDocs(collection(db, colId));
-          snapshot.docs.forEach((doc) => {
-            requests.push({
-              id: doc.id,
-              sourceCollection: colId,
-              ...doc.data(),
-            });
-          });
-        }
-        setAllRequests(requests);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
+    const unsubscribers = [];
+    COLLECTIONS_TO_FETCH.forEach((col) => {
+      const q = query(collection(db, col), orderBy("requestDate", "desc"));
+      const unsub = onSnapshot(q, (snapshot) => {
+        const docs = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          sourceCollection: col,
+          ...doc.data(),
+        }));
+        setAllData((prev) => ({
+          ...prev,
+          [col]: docs,
+        }));
         setLoading(false);
-      }
-    };
-    fetchAllRequests();
+      });
+      unsubscribers.push(unsub);
+    });
+    return () => unsubscribers.forEach((unsub) => unsub());
   }, []);
 
-  // ✅ Group by route
-  const filteredAndGroupedData = useMemo(() => {
-    let filtered = allRequests;
-    if (filterType !== "all") {
-      filtered = allRequests.filter(
-        (req) => (req.profileType || "student") === filterType
-      );
+  // ✅ Apply filter (route / student / teacher)
+  const filteredData = useMemo(() => {
+    if (filterType === "all") return allData;
+
+    const newData = {};
+
+    if (filterType.startsWith("route")) {
+      // ✅ Only one route
+      newData[filterType] = allData[filterType] || [];
+    } else {
+      // ✅ Student / Teacher
+      Object.keys(allData).forEach((route) => {
+        newData[route] = allData[route].filter((req) => {
+          if (filterType === "student")
+            return req.profileType?.toLowerCase() === "student";
+          if (filterType === "teacher")
+            return req.profileType?.toLowerCase() === "teacher";
+          return true;
+        });
+      });
     }
-    return filtered.reduce((acc, req) => {
-      const routeKey = req.routeName ?? req.sourceCollection;
-      if (!acc[routeKey]) acc[routeKey] = [];
-      acc[routeKey].push(req);
-      return acc;
-    }, {});
-  }, [allRequests, filterType]);
 
-  // ✅ Numeric sort (busPassRequests always on top)
-  const getSortedRoutes = (dataObj) => {
-    return Object.entries(dataObj).sort(([a], [b]) => {
-      if (a === "busPassRequests") return -1;
-      if (b === "busPassRequests") return 1;
-      const numA = parseInt(a.replace("route-", "")) || 0;
-      const numB = parseInt(b.replace("route-", "")) || 0;
-      return numA - numB;
-    });
-  };
+    return newData;
+  }, [allData, filterType]);
 
-  // ✅ Clean export date
-  const formatExportDate = (req) =>
-    req.requestDate
-      ? req.requestDate.toDate
-        ? req.requestDate.toDate().toLocaleString()
-        : new Date(req.requestDate.seconds * 1000).toLocaleString()
-      : "N/A";
-
-  // ✅ Export Excel
+  // ✅ Export to Excel
   const exportToExcel = () => {
     const workbook = XLSX.utils.book_new();
-    getSortedRoutes(filteredAndGroupedData).forEach(([routeId, data]) => {
-      const cleanRouteName =
-        routeId === "busPassRequests"
-          ? "GENERAL"
-          : `ROUTE ${routeId.replace("route-", "")}`;
-
-      const sheetData = data.map((req) => ({
-        "Student Name": req.studentName || "N/A",
-        USN: req.usn || "N/A",
-        "Profile Type": req.profileType || "Student",
-        Route: cleanRouteName,
+    Object.keys(filteredData).forEach((route) => {
+      if (!filteredData[route] || filteredData[route].length === 0) return;
+      const sheetData = filteredData[route].map((req) => ({
+        Name: req.studentName || req.name || "N/A",
+        Email: req.studentEmail || req.email || req.usn || "N/A",
         "Pickup Point": req.pickupPoint || "N/A",
-        Status: req.status || "pending",
-        "Request Date": formatExportDate(req),
+        Role: req.profileType || "Student",
+        Date: formatReqDate(req),
       }));
-
       const worksheet = XLSX.utils.json_to_sheet(sheetData);
-      XLSX.utils.book_append_sheet(workbook, worksheet, cleanRouteName);
+      XLSX.utils.book_append_sheet(workbook, worksheet, route.toUpperCase());
     });
     XLSX.writeFile(workbook, `BusPassRequests_${filterType.toUpperCase()}.xlsx`);
   };
 
-  // ✅ Export PDF
+  // ✅ Export to PDF
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text(`Bus Pass Report - ${filterType.toUpperCase()}`, 14, 15);
     let yOffset = 30;
 
-    getSortedRoutes(filteredAndGroupedData).forEach(([routeId, data]) => {
-      const cleanRouteName =
-        routeId === "busPassRequests"
-          ? "GENERAL"
-          : `ROUTE ${routeId.replace("route-", "")}`;
+    Object.keys(filteredData).forEach((route) => {
+      const data = filteredData[route];
+      if (!data || data.length === 0) return;
 
       doc.setFontSize(14);
-      doc.text(`${cleanRouteName} (${data.length})`, 14, yOffset);
+      doc.text(`${route.toUpperCase()} (${data.length})`, 14, yOffset);
 
       const tableData = data.map((req) => [
-        req.studentName || "N/A",
-        req.usn || "N/A",
-        req.profileType || "Student",
+        req.studentName || req.name || "N/A",
+        req.studentEmail || req.email || req.usn || "N/A",
         req.pickupPoint || "N/A",
-        req.status || "pending",
-        formatExportDate(req),
+        req.profileType || "Student",
+        formatReqDate(req),
       ]);
 
       autoTable(doc, {
         startY: yOffset + 5,
-        head: [["Name", "USN", "Profile", "Pickup Point", "Status", "Request Date"]],
+        head: [["Name", "Email", "Pickup Point", "Role", "Date"]],
         body: tableData,
         theme: "striped",
         headStyles: { fillColor: [30, 41, 59] },
@@ -153,15 +128,11 @@ function AllData() {
         yOffset = 20;
       }
     });
+
     doc.save(`BusPassRequests_${filterType.toUpperCase()}.pdf`);
   };
 
-  if (loading)
-    return (
-      <p style={{ textAlign: "center", padding: "20px" }}>
-        Loading all data... ⏳
-      </p>
-    );
+  if (loading) return <p style={{ textAlign: "center" }}>Loading data... ⏳</p>;
 
   return (
     <div style={{ padding: "20px" }}>
@@ -169,7 +140,7 @@ function AllData() {
         📊 Comprehensive Bus Pass Data
       </h2>
 
-      {/* Filter + Export Controls */}
+      {/* Controls */}
       <div
         style={{
           display: "flex",
@@ -193,8 +164,13 @@ function AllData() {
             }}
           >
             <option value="all">All</option>
-            <option value="student">Students</option>
-            <option value="teacher">Teachers</option>
+            {COLLECTIONS_TO_FETCH.map((col) => (
+              <option key={col} value={col}>
+                {col.toUpperCase()}
+              </option>
+            ))}
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
           </select>
         </div>
 
@@ -229,104 +205,64 @@ function AllData() {
         </div>
       </div>
 
-      {/* Summary */}
-      <p
-        style={{
-          textAlign: "center",
-          marginBottom: "20px",
-          fontWeight: "bold",
-        }}
-      >
-        Showing {Object.values(filteredAndGroupedData).flat().length} requests
-        across {Object.keys(filteredAndGroupedData).length} routes (
-        {filterType.toUpperCase()}).
-      </p>
-
-      {/* Data Tables */}
-      {Object.keys(filteredAndGroupedData).length === 0 ? (
-        <p style={{ textAlign: "center" }}>
-          No requests match the current filter.
-        </p>
-      ) : (
-        getSortedRoutes(filteredAndGroupedData).map(([routeId, data]) => {
-          const cleanRouteName =
-            routeId === "busPassRequests"
-              ? "GENERAL"
-              : `ROUTE ${routeId.replace("route-", "")}`;
-
-          return (
-            <div key={routeId} style={{ marginBottom: "30px" }}>
-              <h3 style={{ margin: "10px 0", color: "#2563eb" }}>
-                {cleanRouteName} ({data.length})
-              </h3>
-
-              {/* ✅ Responsive wrapper */}
-              <div style={{ overflowX: "auto" }}>
-                <table
-                  style={{
-                    width: "100%",
-                    minWidth: "600px", // ✅ prevents squish
-                    borderCollapse: "collapse",
-                    background: "#fff",
-                    borderRadius: "10px",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  }}
-                >
-                  <thead style={{ background: "#f3f3f3" }}>
-                    <tr>
-                      <th style={{ padding: "12px", border: "1px solid #ddd" }}>Name</th>
-                      <th style={{ padding: "12px", border: "1px solid #ddd" }}>USN</th>
-                      <th style={{ padding: "12px", border: "1px solid #ddd" }}>Profile</th>
-                      <th style={{ padding: "12px", border: "1px solid #ddd" }}>Pickup Point</th>
-                      <th style={{ padding: "12px", border: "1px solid #ddd" }}>Status</th>
-                      <th style={{ padding: "12px", border: "1px solid #ddd" }}>Request Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.map((req) => (
-                      <tr key={req.id}>
-                        <td style={{ padding: "10px", border: "1px solid #ddd", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                          {req.studentName || "N/A"}
-                        </td>
-                        <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                          {req.usn || "N/A"}
-                        </td>
-                        <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                          {req.profileType || "Student"}
-                        </td>
-                        <td style={{ padding: "10px", border: "1px solid #ddd", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                          {req.pickupPoint || "N/A"}
-                        </td>
-                        <td
-                          style={{
-                            padding: "10px",
-                            border: "1px solid #ddd",
-                            fontWeight: "bold",
-                            color:
-                              req.status === "approved"
-                                ? "green"
-                                : req.status === "pending"
-                                ? "orange"
-                                : "red",
-                          }}
-                        >
-                          {(req.status || "pending").toUpperCase()}
-                        </td>
-                        <td style={{ padding: "10px", border: "1px solid #ddd" }}>
-                          {formatReqDate(req)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          );
-        })
+      {/* Show tables */}
+      {Object.keys(filteredData).map((route) =>
+        filteredData[route] && filteredData[route].length > 0 ? (
+          <div key={route} style={{ marginBottom: "40px" }}>
+            <h3 style={{ marginBottom: "12px", color: "#2563eb" }}>
+              {route.toUpperCase()} ({filteredData[route].length})
+            </h3>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                background: "#fff",
+                borderRadius: "10px",
+                overflow: "hidden",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                minWidth: "900px",
+                tableLayout: "fixed",
+              }}
+            >
+              <thead style={{ background: "#f3f3f3" }}>
+                <tr>
+                  <th style={th}>Name</th>
+                  <th style={th}>Email / USN</th>
+                  <th style={th}>Pickup Point</th>
+                  <th style={th}>Role</th>
+                  <th style={th}>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData[route].map((req) => (
+                  <tr key={req.id}>
+                    <td style={td}>{req.studentName || req.name || "N/A"}</td>
+                    <td style={td}>
+                      {req.studentEmail || req.email || req.usn || "N/A"}
+                    </td>
+                    <td style={td}>{req.pickupPoint || "N/A"}</td>
+                    <td style={td}>{req.profileType || "Student"}</td>
+                    <td style={td}>{formatReqDate(req)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null
       )}
     </div>
   );
 }
+
+const th = {
+  padding: "12px",
+  border: "1px solid #ddd",
+  textAlign: "center",
+};
+const td = {
+  padding: "10px",
+  border: "1px solid #ddd",
+  textAlign: "center",
+};
 
 export default AllData;

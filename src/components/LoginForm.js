@@ -81,7 +81,7 @@ function LoginForm({ onSwitchToRegister }) {
           </label>
           <input
             type="text"
-            placeholder="e.g. 23BTRCT028"
+            placeholder="Enter E-Mail ID"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

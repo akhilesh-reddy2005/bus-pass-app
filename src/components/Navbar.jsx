@@ -78,27 +78,20 @@ function Navbar({ user, userRole, handleLogout, hasApprovedPass }) {
   );
 
   const adminLinks = (
-  <>
-    <li>
-      <Link to="/admin/requests" style={{ ...navLinkStyle, color: "#18193F", background: "#FFD700" }}>
-        Requests
-      </Link>
-    </li>
-    <li><Link to="/admin/users/students" style={navLinkStyle}>Students</Link></li>
-    <li><Link to="/admin/users/teachers" style={navLinkStyle}>Teachers</Link></li>
-    <li><Link to="/admin/logins" style={navLinkStyle}>Login Log</Link></li>
-    <li><Link to="/admin/complaints" style={navLinkStyle}>Complaints</Link></li>
-    <li><Link to="/admin/all-data" style={navLinkStyle}>See All Data</Link></li>
-    
-    {/* 🟩 New Admin Notifications link */}
-    <li>
-      <Link to="/admin/notifications" style={navLinkStyle}>
-        Notifications
-      </Link>
-    </li>
-  </>
-);
-
+    <>
+      <li>
+        <Link to="/admin/requests" style={{ ...navLinkStyle, color: "#18193F", background: "#FFD700" }}>
+          Requests
+        </Link>
+      </li>
+      <li><Link to="/admin/users/students" style={navLinkStyle}>Students</Link></li>
+      <li><Link to="/admin/users/teachers" style={navLinkStyle}>Teachers</Link></li>
+      <li><Link to="/admin/logins" style={navLinkStyle}>Login Log</Link></li>
+      <li><Link to="/admin/complaints" style={navLinkStyle}>Complaints</Link></li>
+      <li><Link to="/admin/all-data" style={navLinkStyle}>See All Data</Link></li>
+      <li><Link to="/admin/notifications" style={navLinkStyle}>Notifications</Link></li>
+    </>
+  );
 
   const guestLinks = (
     <>
@@ -112,13 +105,23 @@ function Navbar({ user, userRole, handleLogout, hasApprovedPass }) {
       <div style={innerStyle}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center" }}>
-          <img src="/logo.png" alt="CampusBus Logo" style={{ height: "32px", marginRight: "10px", borderRadius: "4px", background: "#fff", padding: "2px" }} />
+          <img
+            src="/logo.png"
+            alt="CampusBus Logo"
+            style={{
+              height: "32px",
+              marginRight: "10px",
+              borderRadius: "4px",
+              background: "#fff",
+              padding: "2px"
+            }}
+          />
           <span style={{ fontWeight: "bold", fontSize: 18, color: "#fff", letterSpacing: 1 }}>
             {userRole === "admin" ? "CampusBus Admin" : "CampusBus"}
           </span>
         </div>
 
-        {/* Desktop center links */}
+        {/* Desktop links */}
         {!isMobile && (
           <ul style={linksRowStyle}>
             {user ? (userRole === "admin" ? adminLinks : studentLinks) : guestLinks}
@@ -145,7 +148,13 @@ function Navbar({ user, userRole, handleLogout, hasApprovedPass }) {
             <div ref={popupRef} style={{ position: "relative" }}>
               <button
                 onClick={() => setShowPopup(!showPopup)}
-                style={{ background: "none", border: "none", color: "white", cursor: "pointer", position: "relative" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  position: "relative"
+                }}
               >
                 <Bell size={22} />
                 {unreadCount > 0 && (
@@ -229,13 +238,15 @@ const navStyle = {
   alignItems: "center",
   justifyContent: "center",
   boxShadow: "0 2px 8px rgba(24,25,63,0.08)",
-  position: "relative",
+  position: "fixed",   // ✅ stays fixed at top
+  top: 0,
+  left: 0,
   zIndex: 1000,
 };
 
 const innerStyle = {
   width: "100%",
-  maxWidth: 1200,
+  maxWidth: 1400,
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -251,6 +262,7 @@ const linksRowStyle = {
   padding: 0,
   listStyle: "none",
   height: 56,
+  flexWrap: "nowrap",   // ✅ keep links in one row
 };
 
 const navLinkStyle = {

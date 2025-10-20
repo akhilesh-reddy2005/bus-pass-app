@@ -16,8 +16,9 @@ reportWebVitals();
 // Register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    const swUrl = `${process.env.PUBLIC_URL || ''}/sw.js`;
     navigator.serviceWorker
-      .register('/sw.js')
+      .register(swUrl)
       .then((reg) => console.log('✅ Service worker registered.', reg))
       .catch((err) => console.error('❌ Service worker registration failed:', err));
   });

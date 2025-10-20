@@ -3,7 +3,7 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { logLoginEvent } from "./utils/logLoginEvent";
 import { motion } from 'framer-motion';
 
@@ -24,6 +24,7 @@ import AdminNotifications from './components/AdminNotifications';
 import UserNotifications from './components/UserNotifications';
 import PassVerification from './components/PassVerification';
 import AddToHomeScreen from './components/AddToHomeScreen';
+import PwaDebugStatus from './components/PwaDebugStatus';
 
 // Helper to safely convert Firestore Timestamp to Date
 const toDate = (v) => {
@@ -83,6 +84,7 @@ const AuthPage = ({ showRegister, setShowRegister }) => (
 function App() {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasApprovedPass, setHasApprovedPass] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -154,8 +156,9 @@ function App() {
             const role = userDocSnap.data().role || "student";
             setUserRole(role);
             
-            const profile = userDocSnap.data();
-            await logLoginEvent(db, currentUser, profile);
+            const profileData = userDocSnap.data();
+            setProfile(profileData);
+            await logLoginEvent(db, currentUser, profileData);
 
             if (role === "student") {
               await checkApprovedPass(currentUser.uid);
@@ -188,6 +191,42 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // Listen for install events and keep Firestore user doc in sync for install/uninstall state
+  useEffect(() => {
+    if (!user) return;
+
+    const onAppInstalled = async () => {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { installedPwa: true });
+        setProfile(prev => prev ? { ...prev, installedPwa: true } : { installedPwa: true });
+      } catch (err) {
+        console.error('Failed to set installedPwa flag:', err);
+      }
+    };
+
+    window.addEventListener('appinstalled', onAppInstalled);
+
+    // If the user doc says installed but current display mode is not standalone,
+    // assume the user opened the site in browser (app may have been uninstalled) and clear the flag.
+    (async () => {
+      try {
+        if (profile && profile.installedPwa) {
+          const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (window.navigator && window.navigator.standalone);
+          if (!isStandalone) {
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, { installedPwa: false });
+            setProfile(prev => prev ? { ...prev, installedPwa: false } : { installedPwa: false });
+          }
+        }
+      } catch (err) {
+        console.error('Error reconciling installedPwa flag:', err);
+      }
+    })();
+
+    return () => window.removeEventListener('appinstalled', onAppInstalled);
+  }, [user, profile]);
 
   const handleLogout = async () => {
     try {
@@ -299,7 +338,8 @@ function App() {
   return (
     <Router>
       <AddToHomeScreen />
-      <Navbar user={user} userRole={userRole} handleLogout={handleLogout} hasApprovedPass={hasApprovedPass} />
+      <PwaDebugStatus />
+  <Navbar user={user} profile={profile} userRole={userRole} handleLogout={handleLogout} hasApprovedPass={hasApprovedPass} />
 
       {user ? (
         <>

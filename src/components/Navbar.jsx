@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 // FIX: Changed import path to resolve compilation error. 
 // Assuming NotificationsBell is accessible via an alias or relative path from the components root.
 import NotificationsBell from './NotificationsBell';
+import AddToHomeButton from './AddToHomeButton';
 
-function Navbar({ user, userRole, handleLogout, hasApprovedPass }) {
+function Navbar({ user, userRole, handleLogout, hasApprovedPass, profile }) {
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -126,11 +127,7 @@ function Navbar({ user, userRole, handleLogout, hasApprovedPass }) {
             </>
           )}
 
-          {user && (
-            <div style={{ marginLeft: 6, position: 'relative' }}>
-              <NotificationsBell user={user} userRole={userRole} isMobile={isMobile} />
-            </div>
-          )}
+    
 
           {isMobile && (
             <button
@@ -160,9 +157,14 @@ function Navbar({ user, userRole, handleLogout, hasApprovedPass }) {
             {user ? (userRole === "admin" ? adminLinks : studentLinks) : guestLinks}
             {user && (
               <li>
-                <button onClick={() => { handleLogout(); handleLinkClick(); }} style={{ ...logoutButtonStyle, width: "100%", height: "auto", padding: "12px 14px", marginTop: "8px" }}>
-                  Logout
-                </button>
+                  <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
+                    <button onClick={() => { handleLogout(); handleLinkClick(); }} style={{ ...logoutButtonStyle, width: "100%", height: "auto", padding: "12px 14px", marginTop: "8px" }}>
+                      Logout
+                    </button>
+                    <div style={{ marginTop: 4 }}>
+                      <AddToHomeButton profile={profile} onDone={() => { setMenuOpen(false); handleLinkClick(); }} />
+                    </div>
+                  </div>
               </li>
             )}
           </ul>

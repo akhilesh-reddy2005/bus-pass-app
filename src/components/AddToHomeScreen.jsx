@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 export default function AddToHomeScreen() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [visible, setVisible] = useState(false);
+  const [isIos, setIsIos] = useState(false);
 
   // Determine if app is already installed
   const isAppInstalled = () => {
@@ -24,6 +25,11 @@ export default function AddToHomeScreen() {
   useEffect(() => {
     if (isAppInstalled()) return; // don't listen if already installed
 
+    // Detect iOS Safari (no beforeinstallprompt support)
+    const ua = window.navigator.userAgent || '';
+    const iOS = /iphone|ipad|ipod/i.test(ua) && !window.MSStream;
+    setIsIos(iOS);
+
     const beforeInstallHandler = (e) => {
       console.log('[AddToHomeScreen] beforeinstallprompt event received');
       e.preventDefault();
@@ -42,8 +48,14 @@ export default function AddToHomeScreen() {
       setDeferredPrompt(null);
     };
 
-    window.addEventListener('beforeinstallprompt', beforeInstallHandler);
-    window.addEventListener('appinstalled', appInstalledHandler);
+    // Listen for custom event so other parts of the app can open this UI
+    const openHandler = () => {
+      setVisible(true);
+    };
+
+  window.addEventListener('beforeinstallprompt', beforeInstallHandler);
+  window.addEventListener('appinstalled', appInstalledHandler);
+  window.addEventListener('openAddToHome', openHandler);
 
     // In case the app was installed by other means while on the page
     const installedNow = isAppInstalled();
@@ -55,6 +67,7 @@ export default function AddToHomeScreen() {
     return () => {
       window.removeEventListener('beforeinstallprompt', beforeInstallHandler);
       window.removeEventListener('appinstalled', appInstalledHandler);
+      window.removeEventListener('openAddToHome', openHandler);
     };
   }, []);
 
@@ -88,8 +101,19 @@ export default function AddToHomeScreen() {
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button onClick={onAddClick} style={styles.addBtn}>Add</button>
-          <button onClick={() => setVisible(false)} style={styles.cancelBtn}>Maybe later</button>
+          {!isIos && (
+            <>
+              <button onClick={onAddClick} style={styles.addBtn}>Add</button>
+              <button onClick={() => setVisible(false)} style={styles.cancelBtn}>Maybe later</button>
+            </>
+          )}
+
+          {isIos && (
+            <div style={{ fontSize: 13, color: '#111827' }}>
+              <div style={{ marginBottom: 6 }}>On iPhone/iPad: tap Share → Add to Home Screen</div>
+              <button onClick={() => setVisible(false)} style={styles.addBtn}>Got it</button>
+            </div>
+          )}
         </div>
       </div>
     </div>

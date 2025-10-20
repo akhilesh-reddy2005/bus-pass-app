@@ -1,6 +1,6 @@
 {
-  "short_name": "Campus bus",
-  "name": "Campus bus",
+  "short_name": "BusPass",
+  "name": "BusPass",
   "icons": [
     {
       "src": "logo.png",

@@ -23,7 +23,6 @@ import AllData from './components/AllData';
 import AdminNotifications from './components/AdminNotifications';
 import UserNotifications from './components/UserNotifications';
 import PassVerification from './components/PassVerification';
-import AddToHomeScreen from './components/AddToHomeScreen';
 
 // Helper to safely convert Firestore Timestamp to Date
 const toDate = (v) => {
@@ -81,6 +80,39 @@ const AuthPage = ({ showRegister, setShowRegister }) => (
 
 
 function App() {
+  // PWA install prompt state
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      // Prevent the automatic mini-infobar on mobile
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallModal(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const choiceResult = await deferredPrompt.userChoice;
+    // Optionally handle accepted / dismissed
+    console.log('User choice on install:', choiceResult);
+    setShowInstallModal(false);
+    setDeferredPrompt(null);
+  };
+
+  const handleInstallDismiss = () => {
+    setShowInstallModal(false);
+  };
+
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -298,7 +330,20 @@ function App() {
 
   return (
     <Router>
-      <AddToHomeScreen />
+      {/* Install modal for PWA */}
+      {showInstallModal && (
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, top: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+          <div style={{ width: '92%', maxWidth: 420, background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 10px 30px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+            <img src="/logo.png" alt="BusPass" style={{ width: 72, height: 72, objectFit: 'contain', marginBottom: 12 }} />
+            <h3 style={{ margin: '6px 0 8px' }}>Install BusPass</h3>
+            <p style={{ margin: '0 0 16px', color: '#555' }}>Get quick access to BusPass from your home screen. Tap Install to add the app.</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <button onClick={handleInstallDismiss} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #ddd', background: '#fff' }}>Cancel</button>
+              <button onClick={handleInstallClick} style={{ padding: '10px 14px', borderRadius: 8, border: 'none', background: '#2563EB', color: '#fff' }}>Install</button>
+            </div>
+          </div>
+        </div>
+      )}
       <Navbar user={user} userRole={userRole} handleLogout={handleLogout} hasApprovedPass={hasApprovedPass} />
 
       {user ? (

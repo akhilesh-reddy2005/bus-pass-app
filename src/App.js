@@ -3,7 +3,7 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { logLoginEvent } from "./utils/logLoginEvent";
 import { motion } from 'framer-motion';
 
@@ -23,6 +23,7 @@ import AllData from './components/AllData';
 import AdminNotifications from './components/AdminNotifications';
 import UserNotifications from './components/UserNotifications';
 import PassVerification from './components/PassVerification';
+import AddToHomeScreen from './components/AddToHomeScreen';
 
 // Helper to safely convert Firestore Timestamp to Date
 const toDate = (v) => {
@@ -115,6 +116,7 @@ function App() {
 
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasApprovedPass, setHasApprovedPass] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -186,8 +188,9 @@ function App() {
             const role = userDocSnap.data().role || "student";
             setUserRole(role);
             
-            const profile = userDocSnap.data();
-            await logLoginEvent(db, currentUser, profile);
+            const profileData = userDocSnap.data();
+            setProfile(profileData);
+            await logLoginEvent(db, currentUser, profileData);
 
             if (role === "student") {
               await checkApprovedPass(currentUser.uid);
@@ -220,6 +223,42 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // Listen for install events and keep Firestore user doc in sync for install/uninstall state
+  useEffect(() => {
+    if (!user) return;
+
+    const onAppInstalled = async () => {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { installedPwa: true });
+        setProfile(prev => prev ? { ...prev, installedPwa: true } : { installedPwa: true });
+      } catch (err) {
+        console.error('Failed to set installedPwa flag:', err);
+      }
+    };
+
+    window.addEventListener('appinstalled', onAppInstalled);
+
+    // If the user doc says installed but current display mode is not standalone,
+    // assume the user opened the site in browser (app may have been uninstalled) and clear the flag.
+    (async () => {
+      try {
+        if (profile && profile.installedPwa) {
+          const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (window.navigator && window.navigator.standalone);
+          if (!isStandalone) {
+            const userRef = doc(db, 'users', user.uid);
+            await updateDoc(userRef, { installedPwa: false });
+            setProfile(prev => prev ? { ...prev, installedPwa: false } : { installedPwa: false });
+          }
+        }
+      } catch (err) {
+        console.error('Error reconciling installedPwa flag:', err);
+      }
+    })();
+
+    return () => window.removeEventListener('appinstalled', onAppInstalled);
+  }, [user, profile]);
 
   const handleLogout = async () => {
     try {
@@ -330,20 +369,7 @@ function App() {
 
   return (
     <Router>
-      {/* Install modal for PWA */}
-      {showInstallModal && (
-        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, top: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-          <div style={{ width: '92%', maxWidth: 420, background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 10px 30px rgba(0,0,0,0.2)', textAlign: 'center' }}>
-            <img src="/logo.png" alt="BusPass" style={{ width: 72, height: 72, objectFit: 'contain', marginBottom: 12 }} />
-            <h3 style={{ margin: '6px 0 8px' }}>Install BusPass</h3>
-            <p style={{ margin: '0 0 16px', color: '#555' }}>Get quick access to BusPass from your home screen. Tap Install to add the app.</p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              <button onClick={handleInstallDismiss} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #ddd', background: '#fff' }}>Cancel</button>
-              <button onClick={handleInstallClick} style={{ padding: '10px 14px', borderRadius: 8, border: 'none', background: '#2563EB', color: '#fff' }}>Install</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddToHomeScreen />
       <Navbar user={user} userRole={userRole} handleLogout={handleLogout} hasApprovedPass={hasApprovedPass} />
 
       {user ? (

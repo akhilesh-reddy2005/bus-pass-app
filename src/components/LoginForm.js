@@ -77,11 +77,11 @@ function LoginForm({ onSwitchToRegister }) {
       <form onSubmit={handleLogin}>
         <div style={{ marginBottom: "16px" }}>
           <label style={{ display: "block", fontSize: "14px", fontWeight: "500", marginBottom: "6px" }}>
-            University Serial Number
+            Enter Email-ID
           </label>
           <input
             type="text"
-            placeholder="e.g. 23BTRCT028"
+            placeholder="e.g. user@jainuniversity.ac.in"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

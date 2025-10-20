@@ -156,12 +156,180 @@ function AllData() {
     doc.save(`BusPassRequests_${filterType.toUpperCase()}.pdf`);
   };
 
-  if (loading)
-    return (
-      <p style={{ textAlign: "center", padding: "20px" }}>
-        Loading all data... ⏳
+  if (loading) {
+  const columnHeaders = [
+    "Name",
+    "USN",
+    "Profile",
+    "Pickup Point",
+    "Status",
+    "Request Date",
+  ];
+
+  // Estimate how many skeleton rows to show (based on window height)
+  const rowCount = Math.max(4, Math.floor(window.innerHeight / 100));
+
+  return (
+    <div
+      style={{
+        padding: "40px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+        fontFamily: "Poppins, sans-serif",
+      }}
+    >
+      {/* Table Container */}
+      <div
+        style={{
+          width: "95%",
+          maxWidth: "1300px",
+          background: "#fff",
+          borderRadius: "12px",
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
+          border: "1px solid #e5e7eb",
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.5fr 1fr 1fr 1.5fr 1fr 1fr",
+            background: "#f8faff",
+            borderBottom: "1px solid #e5e7eb",
+            padding: "14px 20px",
+          }}
+        >
+          {columnHeaders.map((header, i) => (
+            <div
+              key={i}
+              style={{
+                height: "16px",
+                width: `${60 + Math.random() * 30}%`,
+                background:
+                  "linear-gradient(90deg, #f2f2f2 25%, #e6e6e6 37%, #f2f2f2 63%)",
+                backgroundSize: "400% 100%",
+                borderRadius: "6px",
+                animation: "shimmer 1.6s infinite linear",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Skeleton Rows */}
+        {[...Array(rowCount)].map((_, i) => (
+          <div
+            key={i}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1.5fr 1fr 1fr 1.5fr 1fr 1fr",
+              padding: "18px 20px",
+              borderBottom: "1px solid #f1f1f1",
+              alignItems: "center",
+            }}
+          >
+            {/* Name */}
+            <div
+              style={{
+                height: "14px",
+                width: "80%",
+                background:
+                  "linear-gradient(90deg, #f4f4f4 25%, #eaeaea 37%, #f4f4f4 63%)",
+                backgroundSize: "400% 100%",
+                borderRadius: "6px",
+                animation: "shimmer 1.6s infinite linear",
+              }}
+            />
+            {/* USN */}
+            <div
+              style={{
+                height: "14px",
+                width: "60%",
+                background:
+                  "linear-gradient(90deg, #f4f4f4 25%, #eaeaea 37%, #f4f4f4 63%)",
+                backgroundSize: "400% 100%",
+                borderRadius: "6px",
+                animation: "shimmer 1.6s infinite linear",
+              }}
+            />
+            {/* Profile */}
+            <div
+              style={{
+                height: "14px",
+                width: "50%",
+                background:
+                  "linear-gradient(90deg, #f4f4f4 25%, #eaeaea 37%, #f4f4f4 63%)",
+                backgroundSize: "400% 100%",
+                borderRadius: "6px",
+                animation: "shimmer 1.6s infinite linear",
+              }}
+            />
+            {/* Pickup Point */}
+            <div
+              style={{
+                height: "14px",
+                width: "70%",
+                background:
+                  "linear-gradient(90deg, #f4f4f4 25%, #eaeaea 37%, #f4f4f4 63%)",
+                backgroundSize: "400% 100%",
+                borderRadius: "6px",
+                animation: "shimmer 1.6s infinite linear",
+              }}
+            />
+            {/* Status Button */}
+            <div
+              style={{
+                height: "24px",
+                width: "80px",
+                background:
+                  "linear-gradient(90deg, #dfffe0 25%, #c2f0c4 37%, #dfffe0 63%)",
+                backgroundSize: "400% 100%",
+                borderRadius: "12px",
+                animation: "shimmer 1.6s infinite linear",
+              }}
+            />
+            {/* Request Date */}
+            <div
+              style={{
+                height: "14px",
+                width: "50%",
+                background:
+                  "linear-gradient(90deg, #f4f4f4 25%, #eaeaea 37%, #f4f4f4 63%)",
+                backgroundSize: "400% 100%",
+                borderRadius: "6px",
+                animation: "shimmer 1.6s infinite linear",
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Subtext */}
+      <p
+        style={{
+          marginTop: "20px",
+          color: "#6b7280",
+          fontWeight: "500",
+        }}
+      >
+        Loading Data...
       </p>
-    );
+
+      {/* Shimmer Animation */}
+      <style>
+        {`
+          @keyframes shimmer {
+            0% { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+          }
+        `}
+      </style>
+    </div>
+  );
+}
+
 
   return (
     <div style={{ padding: "20px" }}>

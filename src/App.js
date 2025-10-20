@@ -57,7 +57,7 @@ const AuthPage = ({ showRegister, setShowRegister }) => (
         <img src="/logo.png" alt="CampusBus Logo" style={{ width: "50px", height: "50px", marginRight: "12px", borderRadius: "50%" }} />
         <div>
           <h1 style={{ fontSize: "20px", fontWeight: "700", margin: 0 }}>CampusBus Portal</h1>
-          <p style={{ fontSize: "12px", color: "#555", margin: 0 }}>Student • Teacher • Admin</p>
+          <p style={{ fontSize: "12px", color: "#555", margin: 0 }}>Student • Teacher</p>
         </div>
       </div>
 
@@ -197,18 +197,99 @@ function App() {
   };
 
   if (loading || checkingPass) {
-    return (
-      <div style={{
+  return (
+    <div
+      style={{
         fontFamily: 'Poppins, sans-serif',
         minHeight: '100vh',
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center"
-      }}>
-        <p>Loading user session...</p>
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f9fafb',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: '90px',
+          height: '90px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        {/* Glow animation around logo */}
+        <div
+          style={{
+            position: 'absolute',
+            width: '90px',
+            height: '90px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(0,123,255,0.3) 0%, transparent 70%)',
+            animation: 'pulseGlow 1.8s ease-in-out infinite',
+          }}
+        ></div>
+
+        {/* Rotating border ring */}
+        <div
+          style={{
+            position: 'absolute',
+            width: '90px',
+            height: '90px',
+            borderRadius: '50%',
+            border: '3px solid transparent',
+            borderTop: '3px solid #007bff',
+            borderRight: '3px solid #007bff',
+            animation: 'spin 1.2s linear infinite',
+          }}
+        ></div>
+
+        {/* Center logo */}
+        <img
+          src="/logo.png"
+          alt="Logo"
+          style={{
+            width: '45px',
+            height: '45px',
+            objectFit: 'contain',
+            borderRadius: '10px',
+            zIndex: 2,
+          }}
+        />
       </div>
-    );
-  }
+
+      <p
+        style={{
+          marginTop: '16px',
+          color: '#333',
+          fontWeight: 500,
+          fontSize: '15px',
+          letterSpacing: '0.3px',
+        }}
+      >
+        Loading....
+      </p>
+
+      {/* Animations */}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+
+          @keyframes pulseGlow {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.4; }
+            100% { transform: scale(1); opacity: 0.8; }
+          }
+        `}
+      </style>
+    </div>
+  );
+}
+
   
   // Determine the default student path based on pass status
   const studentDefaultPath = hasApprovedPass ? "/epass" : "/apply";

@@ -22,7 +22,76 @@ function AdminComplaints() {
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <p>Loading complaints...</p>;
+  if (loading) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: "40px",
+      }}
+    >
+      <div
+        style={{
+          width: "90%",
+          maxWidth: "1000px",
+          background: "#fff",
+          borderRadius: "16px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+          padding: "20px",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            height: "24px",
+            background:
+              "linear-gradient(90deg, #f4f4f4 25%, #e8e8e8 37%, #f4f4f4 63%)",
+            backgroundSize: "400% 100%",
+            borderRadius: "6px",
+            marginBottom: "20px",
+            animation: "shimmer 1.5s infinite linear",
+          }}
+        />
+
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "1.5fr 1fr 1fr 1.5fr 1fr 1fr", // matches your table
+              gap: "16px",
+              marginBottom: "16px",
+            }}
+          >
+            {[...Array(6)].map((__, j) => (
+              <div
+                key={j}
+                style={{
+                  height: "16px",
+                  background:
+                    "linear-gradient(90deg, #f4f4f4 25%, #e8e8e8 37%, #f4f4f4 63%)",
+                  backgroundSize: "400% 100%",
+                  borderRadius: "6px",
+                  animation: "shimmer 1.5s infinite linear",
+                }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -400px 0; }
+          100% { background-position: 400px 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
 
   return (
     <div style={{ padding: "20px" }}>

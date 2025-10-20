@@ -314,7 +314,7 @@ function AllData() {
           fontWeight: "500",
         }}
       >
-        Loading Data...
+      
       </p>
 
       {/* Shimmer Animation */}

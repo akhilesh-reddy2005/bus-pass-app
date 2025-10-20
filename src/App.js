@@ -23,6 +23,7 @@ import AllData from './components/AllData';
 import AdminNotifications from './components/AdminNotifications';
 import UserNotifications from './components/UserNotifications';
 import PassVerification from './components/PassVerification';
+import AddToHomeScreen from './components/AddToHomeScreen';
 
 // Helper to safely convert Firestore Timestamp to Date
 const toDate = (v) => {
@@ -297,6 +298,7 @@ function App() {
 
   return (
     <Router>
+      <AddToHomeScreen />
       <Navbar user={user} userRole={userRole} handleLogout={handleLogout} hasApprovedPass={hasApprovedPass} />
 
       {user ? (
